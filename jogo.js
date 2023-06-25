@@ -3,11 +3,17 @@ sprites.src = './sprites.png';
 
 const som_HIT = new Audio();
 som_HIT.src = './efeitos/hit.wav';
+const caiu_HIT = new Audio();
+caiu_HIT.src = './efeitos/caiu.wav';
+const pulo_HIT = new Audio();
+pulo_HIT.src = './efeitos/pulo.wav';
 
 const canvas = document.querySelector('canvas');
 const contexto = canvas.getContext('2d');
 
+let melhorScore = 100;
 
+let passouPorCano = 0;
 
 const flappybird = {
     spriteX: 0,
@@ -16,7 +22,7 @@ const flappybird = {
     altura: 24,
     x: 10,
     y: 50,
-    gravidade: 0.25,
+    gravidade: 0.25,//0.25
     velocidade: 0,
     velocidadeMax: 10,
     velocidadeMin: -6,
@@ -25,6 +31,7 @@ const flappybird = {
 
     pula() {
         flappybird.velocidade -= 4.6;
+        pulo_HIT.play();
     },
 
     movimentos: [
@@ -69,13 +76,48 @@ const flappybird = {
         }
 
 
-
+        //velocidade maxima e minima de queda e voo 
         if (flappybird.velocidade > flappybird.velocidadeMax) {
             flappybird.velocidade = flappybird.velocidadeMax;
         }
         if (flappybird.velocidade < flappybird.velocidadeMin) {
             flappybird.velocidade = flappybird.velocidadeMin;
         }
+
+        //colisão com canos chaoy 0 ate -225 
+        if (//logica canos bate cara ok
+            flappybird.x >= canos.ceux - flappybird.largura + 1
+        ) {
+
+            //bate no cano de cima
+            if (flappybird.y <= flappybird.altura + canos.chaoy + canos.altura - canos.distanciay * 1.165 ||
+                flappybird.y >= -flappybird.altura + canos.ceuy + canos.distanciay
+            ) {
+
+
+
+                flappybird.velocidade = 0;
+                chao.velocidade = 0;
+                planoDeFundo.velocidade = 0;
+                canos.velocidade = 0;
+                flappybird.gravidade = 0;
+
+
+                som_HIT.play();
+                caiu_HIT.play();
+
+                setTimeout(() => {
+                    flappybird.y = 50;
+                    flappybird.gravidade = 0.25;
+                    mudaDeTela(Telas.GAMEOVER)
+
+
+                }, 500);
+
+
+            }
+        }
+        //queda do passaro
         //console.log(flappybird.velocidade);
         if (flappybird.y >= chao.y - flappybird.altura) {
             //AGONIA QUANDO ELE PASSA DO CHAO
@@ -89,9 +131,10 @@ const flappybird = {
 
 
             som_HIT.play();
+            caiu_HIT.play();
 
             setTimeout(() => {
-                mudaDeTela(Telas.INICIO)
+                mudaDeTela(Telas.GAMEOVER)
                 flappybird.y = 50;
 
             }, 500);
@@ -191,14 +234,15 @@ const canos = {
 
     //canos1
     ceux: canvas.width,
-    ceuy: 200,
+    ceuy: -112.5 + 150 * 1.25,
     chaox: canvas.width,
-    chaoy: 0,
+    chaoy: -112.5,
+
     //canos2 largura do cano e 1.5 distancia da tela
     ceux2: 50 + canvas.width * 1.5,
-    ceuy2: 200,
+    ceuy2: -112.5 + 150 * 1.25,
     chaox2: 50 + canvas.width * 1.5,
-    chaoy2: 0,
+    chaoy2: -112.5,
 
     distanciax: canvas.width / 2,
     distanciay: 150,
@@ -218,25 +262,33 @@ const canos = {
 
         //reaparece cano1
         if (canos.chaox < -canos.largura) {
+            //reaparece
             canos.chaox = canvas.width + canos.largura;
-        }
-        if (canos.ceux < -canos.largura) {
             canos.ceux = canvas.width + canos.largura;
+
+            //onde
+            canos.chaoy = Math.random() * (-225);//-225 é o minimo de cima maximo é 0
+            canos.ceuy = canos.chaoy + canos.distanciay * 1.25;
+            passouPorCano += 1;
         }
 
         //reaparece cano2
         if (canos.chaox2 < -canos.largura) {
+            //reaparece
             canos.chaox2 = canvas.width + canos.largura;
-        }
-        if (canos.ceux2 < -canos.largura) {
             canos.ceux2 = canvas.width + canos.largura;
-        }
+            //onde
+            canos.chaoy2 = Math.random() * (-225);//-225 é o minimo de cima maximo é 0
+            canos.ceuy2 = canos.chaoy2 + canos.distanciay * 1.25;
+            passouPorCano += 1;
 
+        }
 
 
 
     },
     desenha() {
+
         //ceu1
         contexto.drawImage(
             sprites,
@@ -269,6 +321,9 @@ const canos = {
             canos.chaox2, canos.chaoy2 - canos.distanciay,//onde começa a printar
             canos.largura, canos.altura, // Tamanho do desenho
         );
+        //pontuação
+        contexto.font = "30px bold Verdana";
+        contexto.strokeText(passouPorCano, canvas.width - 45, 30);
     },
 };
 
@@ -290,6 +345,80 @@ const mensagemGetReady = {
     },
 };
 
+
+const mensagemGAMEOVER = {
+    spriteX: 134,
+    spriteY: 153,
+    largura: 225,
+    altura: 200,
+    x: (canvas.width / 2) - 225 / 2,
+    y: 50,
+    pontos: 0,
+    desenha() {
+        contexto.drawImage(
+            sprites,
+            mensagemGAMEOVER.spriteX, mensagemGAMEOVER.spriteY,//onde começa a cortar
+            mensagemGAMEOVER.largura, mensagemGAMEOVER.altura,// tamanho do corte
+            mensagemGAMEOVER.x, mensagemGAMEOVER.y,//onde começa a printar
+            mensagemGAMEOVER.largura, mensagemGAMEOVER.altura, // Tamanho do desenho
+        );
+
+
+        if (mensagemGAMEOVER.pontos == 0) {
+            mensagemGAMEOVER.pontos = passouPorCano;
+        }
+        if (passouPorCano >= melhorScore) {
+            melhorScore = passouPorCano;
+        }
+        //medalha de bronze
+        if (mensagemGAMEOVER.pontos <= 10) {
+            contexto.drawImage(
+                sprites,
+                48, 124,
+                44, 44,
+                mensagemGAMEOVER.x + 25, mensagemGAMEOVER.y + 85,
+                44, 44,
+            );
+        }
+
+        //medalha de prata
+        if (mensagemGAMEOVER.pontos > 10 && mensagemGAMEOVER.pontos <= 49) {
+            contexto.drawImage(
+                sprites,
+                48, 78,
+                44, 44,
+                mensagemGAMEOVER.x + 25, mensagemGAMEOVER.y + 85,
+                44, 44,
+            );
+        }
+
+        //medalha de ouro
+        if (mensagemGAMEOVER.pontos > 49 && mensagemGAMEOVER.pontos <= 99) {
+            contexto.drawImage(
+                sprites,
+                0, 124,
+                44, 44,
+                mensagemGAMEOVER.x + 25, mensagemGAMEOVER.y + 85,
+                44, 44,
+            );
+        }
+
+
+        //medalha de diamante
+        if (mensagemGAMEOVER.pontos >= 100) {
+            contexto.drawImage(
+                sprites,
+                0, 78,
+                44, 44,
+                mensagemGAMEOVER.x + 25, mensagemGAMEOVER.y + 85,
+                44, 44,
+            );
+        }
+        contexto.strokeText(melhorScore, mensagemGAMEOVER.x + 160, mensagemGAMEOVER.y + 140.5);
+        contexto.strokeText(passouPorCano, mensagemGAMEOVER.x + 160, mensagemGAMEOVER.y + 97.5);
+    },
+};
+
 //TELAS
 let TelaAtiva = {};
 function mudaDeTela(novaTela) {
@@ -302,7 +431,14 @@ const Telas = {
             planoDeFundo.desenha();
             chao.desenha();
             flappybird.desenha();
-            mensagemGetReady.desenha()
+            mensagemGetReady.desenha();
+            //canos1 e 2 voltam para o fim da tela 50 é a largura do cano
+            canos.ceux = canvas.width;
+            canos.chaox = canvas.width;
+            canos.ceux2 = 50 + canvas.width * 1.5;
+            canos.chaox2 = 50 + canvas.width * 1.5;
+            mensagemGAMEOVER.pontos = 0;
+            passouPorCano = 0;
 
         },
         click() {
@@ -332,11 +468,25 @@ Telas.JOGO = {
     },
 };
 
+Telas.GAMEOVER = {
+    desenha() {
+        planoDeFundo.desenha();
+        canos.desenha();
+        chao.desenha();
+        flappybird.desenha();
+        mensagemGAMEOVER.desenha();
+    },
+    click() {
+        mudaDeTela(Telas.INICIO)
+    },
+    atualiza() {
+    },
+};
+
 function loop() {
 
     TelaAtiva.desenha();
     TelaAtiva.atualiza();
-
     requestAnimationFrame(loop);
 }
 //click na tela
